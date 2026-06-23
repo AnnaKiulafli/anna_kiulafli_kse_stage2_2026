@@ -1,0 +1,6 @@
+threshold,deduplicated_records
+gt_12_hours,3310
+gt_24_hours,696
+gt_7_days,12
+gt_30_days,2
+gt_90_days,2
