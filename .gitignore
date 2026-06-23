@@ -216,3 +216,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project generated data and outputs
+data/raw/
+data/processed/
+data/metadata/
+tables/
+figures/
+
+# Local uv lock generated during ad-hoc validation
+uv.lock
