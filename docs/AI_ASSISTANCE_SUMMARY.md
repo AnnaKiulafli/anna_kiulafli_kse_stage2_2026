@@ -13,4 +13,8 @@ The human repository owner retained responsibility for the project scope, method
 
 AI-assisted work was reviewed through pull requests. Relevant merged pull requests include PR #3, PR #5, and PR #6. Examples of corrections requested before merge included clarifying administrative granularity, avoiding misleading interpretations of recorded alerts as attacks, excluding partial-day data from analysis and modeling, and correcting GitHub workflow issues before merging.
 
-This file is only a concise summary of AI-assisted work. It is not the full AI interaction log required for submission, and it does not include unverifiable private prompts, timestamps, conversation quotes, or personal information.
+This file is only a concise summary of AI-assisted work.
+
+© 2026 Anna Kiulafli. All rights reserved.
+
+This document was created, reviewed, and edited by Anna Kiulafli with assistance from ChatGPT and Codex. The final structure, wording, methodological statements, and publication decisions were approved by the author.
