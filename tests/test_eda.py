@@ -12,7 +12,7 @@ def alerts(rows): return normalize_alerts(pd.DataFrame(rows))
 
 def test_national_totals_equal_sum_of_oblast_totals():
     df=alerts([row('A','R1'), row('B','R2', end='2026-01-02T12:00:00Z')])
-    oblast,raion=regional_comparisons(df)
+    oblast,raion=regional_comparisons(df, date(2026,1,2))
     allocated=allocated_minutes_by_geo_day(df)
     assert allocated.allocated_minutes.sum()==oblast.total_allocated_raion_alert_minutes.sum()
     assert allocated.allocated_minutes.sum()==raion.total_allocated_alert_minutes.sum()
@@ -66,14 +66,24 @@ def test_overlap_allocation_splits_midnight_and_reconciles_regional_totals():
         row('B','R3', start='2026-01-02T22:30:00Z', end='2026-01-03T01:30:00Z'),  # Kyiv: 00:30-03:30 Jan 3
     ])
     daily=daily_raion_activity(df, date(2026,1,3))
-    oblast,raion=regional_comparisons(df)
+    oblast,raion=regional_comparisons(df, date(2026,1,3))
     by_day=dict(zip(daily.local_date, daily.total_raion_time_under_alert_minutes))
     assert by_day[date(2026,1,2)]==150  # R1 90 + simultaneous R2 60; overlapping R1 alert counted once
     assert by_day[date(2026,1,3)]==210  # R1 30 + R3 cross-midnight portion 180
     r1=raion[raion.geo_id.eq('A | R1')].iloc[0]
     r2=raion[raion.geo_id.eq('A | R2')].iloc[0]
     assert r1.total_allocated_alert_minutes==120
+    assert r1.active_days==2
     assert r2.total_allocated_alert_minutes==60
     national=daily.total_raion_time_under_alert_minutes.sum()
     assert national==360
     assert national==oblast.total_allocated_raion_alert_minutes.sum()==raion.total_allocated_alert_minutes.sum()
+
+
+def test_average_daily_allocated_minutes_uses_complete_calendar_denominator():
+    df=alerts([row('A','R1', start='2026-01-02T10:00:00Z', end='2026-01-02T11:00:00Z')])
+    oblast,_=regional_comparisons(df, date(2026,1,3))
+    a=oblast[oblast.oblast.eq('A')].iloc[0]
+    assert a.total_allocated_raion_alert_minutes==60
+    assert a.average_daily_allocated_minutes==20
+    assert a.active_days==1

@@ -22,7 +22,7 @@ def main():
     hist=read_processed(P/'historical_oblast_context.csv')
     latest=max(daily['local_date'])
     nd=national_daily(daily); mn=monthly_national(daily); wd=weekday_patterns(daily)
-    cov=coverage_tables(raion); obl, rai=regional_comparisons(raion); validate_inputs(raion,daily,non,latest,obl,rai); dur=duration_summary(raion); nonc=non_raion_counts(non, raion); hc=historical_context(hist)
+    cov=coverage_tables(raion); obl, rai=regional_comparisons(raion, latest); validate_inputs(raion,daily,non,latest,obl,rai); dur=duration_summary(raion); nonc=non_raion_counts(non, raion); hc=historical_context(hist)
     # reconciliation
     if abs(nd['records_started_on_date'].sum()-obl['total_alert_records'].sum())>1e-6: raise AssertionError('National records do not reconcile with oblast records')
     if abs(rai['total_allocated_alert_minutes'].sum()-obl['total_allocated_raion_alert_minutes'].sum())>1e-6: raise AssertionError('Raion allocated minutes do not reconcile with oblast allocated minutes')
@@ -35,7 +35,7 @@ def main():
     F.mkdir(parents=True, exist_ok=True)
     fig, ax=plt.subplots(figsize=(12,6)); ax.plot(pd.to_datetime(nd.local_date), nd.total_raion_time_under_alert_minutes,label='Daily minutes'); ax.plot(pd.to_datetime(nd.local_date), nd.rolling_7d_total_minutes,label='7-day mean'); ax.plot(pd.to_datetime(nd.local_date), nd.rolling_14d_total_minutes,label='14-day mean'); ax.set_title('Nationwide raion alert activity by completed day'); ax.set_ylabel('Allocated raion-minutes under alert'); ax.set_xlabel('Date'); ax.legend(); fig.tight_layout(); fig.savefig(F/'national_daily_activity.png',dpi=160); plt.close(fig)
     fig, ax=plt.subplots(figsize=(10,5)); ax.bar(mn.month, mn.total_raion_time_under_alert_minutes); ax.set_title('Monthly nationwide raion alert activity'); ax.set_ylabel('Allocated raion-minutes'); ax.set_xlabel('Month'); fig.tight_layout(); fig.savefig(F/'monthly_national_activity.png',dpi=160); plt.close(fig)
-    fig, ax=plt.subplots(figsize=(10,5)); ax.bar(cov['monthly_recorded_activity_presence'].month, cov['monthly_recorded_activity_presence'].active_raions); ax.set_title('Monthly recorded raion activity presence'); ax.set_ylabel('Unique oblast + raion units'); ax.set_xlabel('Month'); fig.tight_layout(); fig.savefig(F/'active_raion_coverage_by_month.png',dpi=160); plt.close(fig)
+    fig, ax=plt.subplots(figsize=(10,5)); ax.bar(cov['monthly_recorded_activity_presence'].month, cov['monthly_recorded_activity_presence'].active_raions); ax.set_title('Monthly recorded raion activity presence'); ax.set_ylabel('Unique oblast + raion units'); ax.set_xlabel('Month'); fig.tight_layout(); fig.savefig(F/'monthly_recorded_raion_activity_presence.png',dpi=160); plt.close(fig)
     bar(obl.head(15).sort_values('total_allocated_raion_alert_minutes'), 'oblast','total_allocated_raion_alert_minutes','Top oblasts by allocated raion alert minutes','top_oblasts_by_minutes.png','Allocated raion-minutes','Oblast')
     bar(rai.sort_values('total_allocated_alert_minutes',ascending=False).head(20).sort_values('total_allocated_alert_minutes'), 'geo_id','total_allocated_alert_minutes','Top oblast + raion units by allocated alert minutes','top_raions_by_minutes.png','Allocated minutes','Oblast + raion')
     fig, ax=plt.subplots(figsize=(10,5)); raion[valid_duration_mask(raion)]['duration_minutes'].plot.hist(bins=60, ax=ax); ax.set_title('Distribution of valid alert durations'); ax.set_xlabel('Minutes'); fig.tight_layout(); fig.savefig(F/'valid_duration_distribution.png',dpi=160); plt.close(fig)

@@ -91,11 +91,11 @@ def coverage_tables(raion: pd.DataFrame) -> dict[str, pd.DataFrame]:
     missing = x.groupby(["oblast", "raion", "geo_id"], dropna=False)["month"].apply(lambda s: ", ".join(sorted(all_months - set(s)))).reset_index(name="months_with_no_recorded_alerts")
     missing = missing[missing["months_with_no_recorded_alerts"].ne("")]
     oblast_month = x.groupby(["oblast", "month"], dropna=False)["geo_id"].nunique().reset_index(name="active_raions")
-    changing = oblast_month.groupby("oblast", dropna=False)["active_raions"].nunique().reset_index(name="distinct_monthly_coverage_counts")
-    changing = changing[changing["distinct_monthly_coverage_counts"].gt(1)]
+    changing = oblast_month.groupby("oblast", dropna=False)["active_raions"].nunique().reset_index(name="distinct_monthly_recorded_raion_counts")
+    changing = changing[changing["distinct_monthly_recorded_raion_counts"].gt(1)]
     missing_values = raion[raion["oblast"].isna() | raion["raion"].isna()].copy()
     concise = first_last.groupby("oblast", dropna=False).agg(represented_raions=("geo_id","nunique"), first_date=("first_date","min"), last_date=("last_date","max"), records=("records","sum")).reset_index()
-    return {"first_last_raion": first_last, "monthly_recorded_activity_presence": active_by_month, "raions_without_recorded_alerts_in_one_or_more_months": missing, "oblasts_changing_coverage": changing, "missing_oblast_or_raion": missing_values, "coverage_by_oblast": concise}
+    return {"first_last_raion": first_last, "monthly_recorded_activity_presence": active_by_month, "raions_without_recorded_alerts_in_one_or_more_months": missing, "oblasts_with_changing_recorded_raion_presence": changing, "missing_oblast_or_raion": missing_values, "coverage_by_oblast": concise}
 
 
 
@@ -145,17 +145,24 @@ def allocated_minutes_by_geo_day(raion: pd.DataFrame, latest_complete_day: date 
         })
     return pd.DataFrame(totals)
 
-def regional_comparisons(raion: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-    x = raion.copy(); x["geo_id"] = geo_key(x); valid = x[valid_duration_mask(x)].copy(); allocated = allocated_minutes_by_geo_day(x)
-    oblast = x.groupby("oblast", dropna=False).agg(total_alert_records=("oblast","size"), represented_raions=("geo_id","nunique"), active_days=("local_date","nunique")).reset_index()
+def regional_comparisons(raion: pd.DataFrame, latest_complete_day: date | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
+    x = raion.copy(); x["geo_id"] = geo_key(x); valid = x[valid_duration_mask(x)].copy()
+    if latest_complete_day is None and not x.empty:
+        latest_complete_day = max(x["local_date"])
+    analysis_day_count = (latest_complete_day - CURRENT_START_DATE).days + 1 if latest_complete_day is not None else 0
+    allocated = allocated_minutes_by_geo_day(x, latest_complete_day)
+    oblast = x.groupby("oblast", dropna=False).agg(total_alert_records=("oblast","size"), represented_raions=("geo_id","nunique")).reset_index()
     mins = allocated.groupby("oblast", dropna=False)["allocated_minutes"].sum().rename("total_allocated_raion_alert_minutes").reset_index()
-    oblast = oblast.merge(mins, how="left", on="oblast").fillna({"total_allocated_raion_alert_minutes":0})
-    oblast["average_daily_allocated_minutes"] = oblast["total_allocated_raion_alert_minutes"] / x["local_date"].nunique()
+    oblast_active = allocated.groupby("oblast", dropna=False)["local_date"].nunique().rename("active_days").reset_index()
+    oblast = oblast.merge(mins, how="left", on="oblast").merge(oblast_active, how="left", on="oblast").fillna({"total_allocated_raion_alert_minutes":0, "active_days":0})
+    oblast["active_days"] = oblast["active_days"].astype(int)
+    oblast["average_daily_allocated_minutes"] = oblast["total_allocated_raion_alert_minutes"] / analysis_day_count if analysis_day_count else 0
     oblast["records_per_represented_raion"] = oblast["total_alert_records"] / oblast["represented_raions"]
-    ra = x.groupby(["oblast","raion","geo_id"], dropna=False).agg(total_alert_records=("geo_id","size"), active_days=("local_date","nunique")).reset_index()
+    ra = x.groupby(["oblast","raion","geo_id"], dropna=False).agg(total_alert_records=("geo_id","size")).reset_index()
     alloc_raion = allocated.groupby(["oblast","raion","geo_id"], dropna=False)["allocated_minutes"].sum().rename("total_allocated_alert_minutes").reset_index()
+    raion_active = allocated.groupby(["oblast","raion","geo_id"], dropna=False)["local_date"].nunique().rename("active_days").reset_index()
     ds = valid.groupby(["oblast","raion","geo_id"], dropna=False)["duration_minutes"].agg(average_duration_per_valid_alert="mean", median_duration="median", longest_valid_alert="max").reset_index()
-    return oblast.sort_values("total_allocated_raion_alert_minutes", ascending=False), ra.merge(alloc_raion, how="left", on=["oblast","raion","geo_id"]).merge(ds, how="left", on=["oblast","raion","geo_id"]).fillna({"total_allocated_alert_minutes":0})
+    return oblast.sort_values("total_allocated_raion_alert_minutes", ascending=False), ra.merge(alloc_raion, how="left", on=["oblast","raion","geo_id"]).merge(raion_active, how="left", on=["oblast","raion","geo_id"]).merge(ds, how="left", on=["oblast","raion","geo_id"]).fillna({"total_allocated_alert_minutes":0, "active_days":0})
 
 
 def duration_summary(raion: pd.DataFrame) -> dict[str, pd.DataFrame]:
