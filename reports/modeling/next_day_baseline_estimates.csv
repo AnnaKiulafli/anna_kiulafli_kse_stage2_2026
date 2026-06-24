@@ -1,0 +1,4 @@
+forecast_date,latest_observed_date,model,estimate,historical_evaluation_mae,historical_evaluation_rmse
+2026-06-24,2026-06-23,persistence,505.0,96.6,133.03630009458752
+2026-06-24,2026-06-23,seasonal_7,197.0,112.8,163.80458741177813
+2026-06-24,2026-06-23,trailing_mean_7,390.2857142857143,76.91020408163264,115.53986097974439

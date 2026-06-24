@@ -229,3 +229,6 @@ uv.lock
 
 # Generated EDA figures
 reports/eda/figures/*.png
+
+# Generated modeling figures
+reports/modeling/figures/*.png

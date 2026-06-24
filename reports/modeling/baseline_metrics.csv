@@ -1,0 +1,4 @@
+model,target,evaluation_start,evaluation_end,initial_history_days,evaluation_days,mae,rmse,mean_error
+trailing_mean_7,records_started_on_date,2026-05-20,2026-06-23,139,35,76.91020408163264,115.53986097974439,-8.453061224489794
+persistence,records_started_on_date,2026-05-20,2026-06-23,139,35,96.6,133.03630009458752,-0.5428571428571428
+seasonal_7,records_started_on_date,2026-05-20,2026-06-23,139,35,112.8,163.80458741177813,-1.1428571428571428
