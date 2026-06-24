@@ -1,13 +1,17 @@
 from __future__ import annotations
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'src'))
 
 import matplotlib.pyplot as plt
 import pandas as pd
 from alert_pipeline.eda import *
 
-P=Path('data/processed'); R=Path('reports/eda'); T=R/'tables'; F=R/'figures'
+P = ROOT / 'data' / 'processed'
+R = ROOT / 'reports' / 'eda'
+T = R / 'tables'
+F = R / 'figures'
 
 def save(df,name):
     T.mkdir(parents=True, exist_ok=True); df.to_csv(T/f'{name}.csv', index=False); return T/f'{name}.csv'
