@@ -50,7 +50,7 @@ The preprocessing pipeline applies the following decisions before producing anal
 | `scripts/` | Command-line entry points for downloading data, building processed datasets, running EDA, and running baselines. |
 | `src/alert_pipeline/` | Reusable preprocessing, EDA, and modeling code used by the scripts and tests. |
 | `tests/` | Automated tests for preprocessing, EDA, and baseline modeling behavior. |
-| `reports/data_quality/` | Generated data-quality and anomaly audit outputs. |
+| `data/processed/` | Locally generated processed datasets, anomaly CSVs, partial-day files, and non-raion audit outputs. |
 | `reports/eda/` | Committed EDA summaries and tables; generated figures are ignored where configured. |
 | `reports/modeling/` | Committed baseline modeling metrics, walk-forward predictions, next-day analytical snapshots, and summaries. |
 | `notebooks/` | Notebook workspace for nationwide EDA review. |
