@@ -134,6 +134,8 @@ Three deliberately simple baselines are evaluated:
 
 `trailing_mean_7` had the lowest historical evaluation MAE in this snapshot. This historical ranking does not guarantee future performance.
 
+The generated modeling figure compares historical actual values with the three walk-forward baseline estimates, and the final markers show the three one-step-ahead estimates for the dynamic next forecast date. Values represent recorded raion-level alert records started on a date, not attacks or safety forecasts. Generate the figure locally with `python scripts/run_baselines.py`.
+
 One-step-ahead baseline estimates in `reports/modeling/next_day_baseline_estimates.csv` are a dated analytical snapshot for forecast date `2026-06-24`, using data observed through `2026-06-23`: persistence 505.000, seasonal_7 197.000, and trailing_mean_7 390.286. These values are not operational predictions.
 
 ## Limitations and responsible interpretation

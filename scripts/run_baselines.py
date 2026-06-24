@@ -4,11 +4,12 @@ import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from alert_pipeline.modeling import TARGET_COLUMN, TARGET_DESCRIPTION, load_daily_series, run_baseline_evaluation
+from alert_pipeline.modeling import MODEL_COLUMNS, TARGET_COLUMN, TARGET_DESCRIPTION, load_daily_series, run_baseline_evaluation
 
 
 def markdown_table(frame) -> str:
@@ -60,20 +61,77 @@ def write_summary(series, result, path: Path) -> None:
 
 
 def plot_predictions(result, path: Path) -> None:
-    plt.figure(figsize=(12, 6))
-    x = result.predictions["local_date"]
-    plt.plot(x, result.predictions["actual"], label="Actual", linewidth=2)
-    plt.plot(x, result.predictions["persistence_prediction"], label="Persistence", alpha=0.8)
-    plt.plot(x, result.predictions["seasonal_7_prediction"], label="Seasonal naive (7-day)", alpha=0.8)
-    plt.plot(x, result.predictions["trailing_mean_7_prediction"], label="Trailing 7-day mean", alpha=0.8)
-    plt.title("Walk-forward actual vs. baseline estimates")
-    plt.xlabel("Local date")
-    plt.ylabel(TARGET_COLUMN)
-    plt.legend()
-    plt.tight_layout()
+    model_styles = {
+        "persistence": {"label": "Persistence", "linestyle": "--", "marker": "o"},
+        "seasonal_7": {"label": "Seasonal naive (7-day)", "linestyle": ":", "marker": "s"},
+        "trailing_mean_7": {"label": "Trailing 7-day mean", "linestyle": "-.", "marker": "^"},
+    }
+
+    predictions = result.predictions.copy()
+    estimates = result.next_day_estimates.copy()
+    forecast_date = estimates["forecast_date"].iloc[0]
+    last_observed_date = predictions["local_date"].iloc[-1]
+    separator_date = pd.Timestamp(last_observed_date) + (pd.Timestamp(forecast_date) - pd.Timestamp(last_observed_date)) / 2
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.plot(
+        predictions["local_date"],
+        predictions["actual"],
+        label="Actual",
+        color="black",
+        linewidth=2.8,
+        zorder=4,
+    )
+
+    for model, style in model_styles.items():
+        estimate = estimates.loc[estimates["model"] == model, "estimate"].iloc[0]
+        x_values = pd.concat([predictions["local_date"], pd.Series([forecast_date])], ignore_index=True)
+        y_values = pd.concat([predictions[MODEL_COLUMNS[model]], pd.Series([estimate])], ignore_index=True)
+        ax.plot(
+            x_values,
+            y_values,
+            label=style["label"],
+            linestyle=style["linestyle"],
+            linewidth=1.8,
+            alpha=0.9,
+            zorder=2,
+        )
+        ax.scatter(
+            [forecast_date],
+            [estimate],
+            marker=style["marker"],
+            s=90,
+            edgecolor="black",
+            linewidth=0.8,
+            zorder=5,
+        )
+        ax.annotate(
+            f"{model}: {estimate:.0f}",
+            xy=(forecast_date, estimate),
+            xytext=(8, 0),
+            textcoords="offset points",
+            va="center",
+            fontsize=9,
+        )
+
+    ax.axvline(separator_date, color="gray", linestyle="--", linewidth=1.2, alpha=0.8)
+    ax.set_title("Actual daily records and baseline estimates")
+    ax.set_xlabel("Local date")
+    ax.set_ylabel("Recorded raion alert records started on date")
+    ax.legend(loc="best")
+    ax.grid(True, axis="y", alpha=0.25)
+    fig.text(
+        0.5,
+        0.01,
+        "Statistical baselines based only on historical recorded counts. Not a prediction of attacks or safety conditions.",
+        ha="center",
+        fontsize=9,
+    )
+    fig.autofmt_xdate()
+    fig.tight_layout(rect=(0, 0.05, 1, 1))
     path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(path, dpi=150)
-    plt.close()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
 
 
 def main() -> None:
