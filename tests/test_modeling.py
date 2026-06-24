@@ -113,3 +113,68 @@ def test_no_current_partial_day_data_is_read_by_modeling_script():
     script_text = Path("scripts/run_baselines.py").read_text(encoding="utf-8")
     assert "daily_2026_raion_activity.csv" in script_text
     assert "current_partial_day" not in script_text
+
+
+def load_run_baselines_module():
+    import importlib.util
+    from pathlib import Path
+
+    module_path = Path("scripts/run_baselines.py")
+    spec = importlib.util.spec_from_file_location("run_baselines", module_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_plot_predictions_includes_dynamic_forecast_markers_without_future_actual(tmp_path, monkeypatch):
+    import matplotlib.pyplot as plt
+
+    plot_predictions = load_run_baselines_module().plot_predictions
+
+    result = run_baseline_evaluation(daily(list(range(1, 41))))
+    output = tmp_path / "walk_forward_actual_vs_baselines.png"
+
+    monkeypatch.setattr(plt, "close", lambda *args, **kwargs: None)
+    plot_predictions(result, output)
+
+    assert output.exists()
+    assert output.stat().st_size > 0
+
+    ax = plt.gcf().axes[0]
+    forecast_date = result.next_day_estimates["forecast_date"].iloc[0]
+    last_observed_date = result.predictions["local_date"].iloc[-1]
+    expected_estimates = result.next_day_estimates.set_index("model")["estimate"].to_dict()
+
+    actual_line = next(line for line in ax.lines if line.get_label() == "Actual")
+    assert list(actual_line.get_xdata())[-1] == last_observed_date
+    assert forecast_date not in list(actual_line.get_xdata())
+
+    model_labels = {
+        "persistence": "Persistence",
+        "seasonal_7": "Seasonal naive (7-day)",
+        "trailing_mean_7": "Trailing 7-day mean",
+    }
+    for model, label in model_labels.items():
+        line = next(line for line in ax.lines if line.get_label() == label)
+        assert list(line.get_xdata())[-1] == forecast_date
+        assert list(line.get_ydata())[-1] == pytest.approx(expected_estimates[model])
+
+    annotation_text = "\n".join(text.get_text() for text in ax.texts)
+    for model, estimate in expected_estimates.items():
+        assert f"{model}: {estimate:.0f}" in annotation_text
+
+    plt.close("all")
+
+
+def test_plot_predictions_preserves_baseline_metrics_and_predictions(tmp_path):
+    plot_predictions = load_run_baselines_module().plot_predictions
+
+    result = run_baseline_evaluation(daily(list(range(1, 41))))
+    metrics_before = result.metrics.copy(deep=True)
+    predictions_before = result.predictions.copy(deep=True)
+
+    plot_predictions(result, tmp_path / "walk_forward_actual_vs_baselines.png")
+
+    pd.testing.assert_frame_equal(result.metrics, metrics_before)
+    pd.testing.assert_frame_equal(result.predictions, predictions_before)
