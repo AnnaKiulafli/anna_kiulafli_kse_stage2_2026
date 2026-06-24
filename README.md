@@ -151,7 +151,7 @@ One-step-ahead baseline estimates in `reports/modeling/next_day_baseline_estimat
 
 ## Tests
 
-The current test suite contains 33 tests. It covers preprocessing, timezone and complete-day logic, cross-midnight interval allocation, overlap merging, geographic reconciliation, EDA validation, leakage-free walk-forward modeling, and metric calculations.
+The current test suite contains 35 tests. It covers preprocessing, timezone and complete-day logic, cross-midnight interval allocation, overlap merging, geographic reconciliation, EDA validation, leakage-free walk-forward modeling, plotting validation, and metric calculations.
 
 ## AI assistance
 
