@@ -161,3 +161,5 @@ ChatGPT and Codex were used for project planning, prompt development, implementa
 
 - Dataset: `Vadimkin/ukrainian-air-raid-sirens-dataset`, `official_data_en.csv`.
 - Python libraries used in the workflow include pandas for data processing, matplotlib for generated figures, and pytest for automated validation.
+
+Copyright © 2026 Anna Kiulafli. See [COPYRIGHT.md](COPYRIGHT.md).
