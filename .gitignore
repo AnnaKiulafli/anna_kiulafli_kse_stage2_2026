@@ -226,3 +226,6 @@ figures/
 
 # Local uv lock generated during ad-hoc validation
 uv.lock
+
+# Generated EDA figures
+reports/eda/figures/*.png
